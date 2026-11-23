@@ -1,3 +1,4 @@
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { getSupabaseClient } from "@/lib/supabase";
 import { sendEmailSafe } from "@/lib/resend";
 
@@ -6,6 +7,15 @@ export const runtime = "nodejs";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(request, {
+    keyPrefix: "newsletter",
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return createRateLimitResponse(rate.retryAfterSeconds);
+  }
+
   let payload: { email?: unknown };
   try {
     payload = (await request.json()) as { email?: unknown };

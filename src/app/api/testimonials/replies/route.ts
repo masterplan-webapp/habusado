@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { moderateCommunityText } from "@/lib/moderation";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { notifyAdminSafe } from "@/lib/resend";
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -16,6 +17,15 @@ function escapeHtml(value: string): string {
 }
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(request, {
+    keyPrefix: "testimonial-replies",
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return createRateLimitResponse(rate.retryAfterSeconds);
+  }
+
   let body: unknown;
   try {
     body = await request.json();

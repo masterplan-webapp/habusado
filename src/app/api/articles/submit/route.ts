@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { moderateCommunityText } from "@/lib/moderation";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
 import { notifyAdminSafe } from "@/lib/resend";
@@ -75,6 +76,15 @@ function pickDefaultCover(category: ArticleCategory): string {
 }
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(request, {
+    keyPrefix: "article-submit",
+    limit: 5,
+    windowMs: 30 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return createRateLimitResponse(rate.retryAfterSeconds);
+  }
+
   let body: SubmitArticleBody;
   try {
     body = (await request.json()) as SubmitArticleBody;

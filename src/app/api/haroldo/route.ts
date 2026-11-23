@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -194,6 +195,15 @@ export async function POST(request: Request) {
 
   if (detectCrisis(latestUserMessage)) {
     return streamText(CRISIS_REPLY, true);
+  }
+
+  const rate = checkRateLimit(request, {
+    keyPrefix: "haroldo",
+    limit: 25,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return createRateLimitResponse(rate.retryAfterSeconds);
   }
 
   const apiKey = process.env.GEMINI_API_KEY?.trim();

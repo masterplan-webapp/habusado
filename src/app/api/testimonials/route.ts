@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SEED_TESTIMONIALS } from "@/data/seed-testimonials";
 import { moderateCommunityText } from "@/lib/moderation";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { notifyAdminSafe } from "@/lib/resend";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { Testimonial, TestimonialReply } from "@/lib/types";
@@ -65,6 +66,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(request, {
+    keyPrefix: "testimonials",
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return createRateLimitResponse(rate.retryAfterSeconds);
+  }
+
   let body: unknown;
   try {
     body = await request.json();
