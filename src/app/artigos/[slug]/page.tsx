@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { ArrowLeft, Calendar, Clock, MessageCircle, User } from "lucide-react";
 import { getAllArticles, getArticleBySlug } from "@/lib/articles";
+import { buildCanonicalUrl, getSiteUrl } from "@/lib/site-url";
 import { formatDatePtBr } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Badge } from "@/components/ui/Badge";
 import { buttonClasses } from "@/components/ui/Button";
 import { NewsletterBanner } from "@/components/ui/NewsletterBanner";
@@ -34,9 +36,43 @@ export async function generateMetadata({
     };
   }
 
+  const canonicalUrl = buildCanonicalUrl(`/artigos/${article.meta.slug}`);
+  const imageUrl = article.meta.coverImage.startsWith("http")
+    ? article.meta.coverImage
+    : `${getSiteUrl()}${article.meta.coverImage}`;
+
   return {
     title: article.meta.title,
     description: article.meta.excerpt,
+    keywords: article.meta.tags,
+    authors: [{ name: article.meta.author }],
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      type: "article",
+      locale: "pt_BR",
+      url: canonicalUrl,
+      title: article.meta.title,
+      description: article.meta.excerpt,
+      publishedTime: article.meta.publishedAt,
+      section: article.meta.category,
+      tags: article.meta.tags,
+      images: [
+        {
+          url: imageUrl,
+          width: 1600,
+          height: 900,
+          alt: article.meta.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.meta.title,
+      description: article.meta.excerpt,
+      images: [imageUrl],
+    },
   };
 }
 
@@ -49,9 +85,68 @@ export default async function ArtigoSlugPage({ params }: ArticlePageProps) {
   }
 
   const { meta, content } = article;
+  const siteUrl = getSiteUrl();
+  const articleUrl = buildCanonicalUrl(`/artigos/${meta.slug}`);
+  const coverUrl = meta.coverImage.startsWith("http")
+    ? meta.coverImage
+    : `${siteUrl}${meta.coverImage}`;
+
+  const articleJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: meta.title,
+      description: meta.excerpt,
+      image: [coverUrl],
+      datePublished: meta.publishedAt,
+      dateModified: meta.publishedAt,
+      inLanguage: "pt-BR",
+      articleSection: meta.category,
+      keywords: meta.tags.join(", "),
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": articleUrl,
+      },
+      author: {
+        "@type": "Person",
+        name: meta.author,
+        ...(meta.authorCredentials ? { jobTitle: meta.authorCredentials } : {}),
+      },
+      publisher: {
+        "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
+        name: "Homem Abusado",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Início",
+          item: siteUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Artigos",
+          item: `${siteUrl}/artigos`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: meta.title,
+          item: articleUrl,
+        },
+      ],
+    },
+  ];
 
   return (
     <article className="bg-[#021729]">
+      <JsonLd data={articleJsonLd} />
       <header className="border-b border-[#1E3A52]">
         <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
           <Link

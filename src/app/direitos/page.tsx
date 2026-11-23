@@ -8,17 +8,37 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { RIGHTS_DISCLAIMER, RIGHTS_GUIDE_SECTIONS } from "@/data/rights-guide";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { buttonClasses } from "@/components/ui/Button";
+import { buildCanonicalUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Guia de Direitos e Provas",
   description:
     "Noções práticas sobre preservação lícita de provas, guarda e convivência com filhos, alienação parental, defesa contra falsas acusações e Defensoria Pública no Brasil.",
+  alternates: {
+    canonical: buildCanonicalUrl("/direitos"),
+  },
 };
 
 export default function DireitosPage() {
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    inLanguage: "pt-BR",
+    mainEntity: RIGHTS_GUIDE_SECTIONS.map((section) => ({
+      "@type": "Question",
+      name: section.title,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${section.summary} ${section.points.join(" ")} ${section.practicalTip}`,
+      },
+    })),
+  };
+
   return (
     <div className="bg-[#021729]">
+      <JsonLd data={faqSchema} />
       <section className="border-b border-[#1E3A52]">
         <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="max-w-3xl">

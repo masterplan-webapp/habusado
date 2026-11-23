@@ -3,17 +3,41 @@ import Link from "next/link";
 import { Activity, BookMarked, MessageCircle } from "lucide-react";
 import { GLOSSARY_TERMS } from "@/data/glossary-terms";
 import { GlossaryExplorer } from "@/components/glossary/GlossaryExplorer";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { buttonClasses } from "@/components/ui/Button";
+import { buildCanonicalUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Glossário de Dinâmicas Abusivas",
   description:
     "Conheça os principais termos usados para descrever abuso psicológico, controle financeiro, isolamento e manipulação em relacionamentos, com exemplos reais e formas práticas de lidar.",
+  alternates: {
+    canonical: buildCanonicalUrl("/glossario"),
+  },
 };
 
 export default function GlossarioPage() {
+  const glossaryUrl = buildCanonicalUrl("/glossario");
+  const glossarySchema = {
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    "@id": `${glossaryUrl}#termset`,
+    name: "Glossário de Dinâmicas Abusivas | Homem Abusado",
+    description:
+      "Definições práticas de dinâmicas comuns em relacionamentos abusivos contra homens.",
+    inLanguage: "pt-BR",
+    url: glossaryUrl,
+    hasDefinedTerm: GLOSSARY_TERMS.map((item) => ({
+      "@type": "DefinedTerm",
+      name: item.term,
+      description: item.summary,
+      inDefinedTermSet: `${glossaryUrl}#termset`,
+    })),
+  };
+
   return (
     <div className="bg-[#021729]">
+      <JsonLd data={glossarySchema} />
       <section className="border-b border-[#1E3A52]">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
