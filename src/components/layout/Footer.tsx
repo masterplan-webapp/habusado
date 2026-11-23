@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Instagram, Newspaper } from "lucide-react";
 import { CookiePreferencesTrigger } from "@/components/legal/CookieConsentManager";
 import { PixSupportBox } from "@/components/ui/PixSupportBox";
 import { Logo } from "./Logo";
@@ -42,6 +43,28 @@ export function Footer() {
               Em caso de risco imediato, ligue para a Polícia Militar (190) ou
               para o Centro de Valorização da Vida (CVV 188, 24h, gratuito).
             </p>
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              <a
+                href="https://www.instagram.com/bloghomemabusado/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram oficial do Homem Abusado"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#1E3A52] bg-[#112536] px-3 py-1.5 text-xs font-medium text-[#CBD5E1] transition-colors hover:border-[#015E57] hover:text-white"
+              >
+                <Instagram className="h-3.5 w-3.5 text-[#2DD4BF]" aria-hidden="true" />
+                <span>Instagram</span>
+              </a>
+              <a
+                href="https://homemabusado.substack.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Newsletter do Homem Abusado no Substack"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#1E3A52] bg-[#112536] px-3 py-1.5 text-xs font-medium text-[#CBD5E1] transition-colors hover:border-[#015E57] hover:text-white"
+              >
+                <Newspaper className="h-3.5 w-3.5 text-[#2DD4BF]" aria-hidden="true" />
+                <span>Substack</span>
+              </a>
+            </div>
           </div>
 
           <div>

@@ -78,7 +78,10 @@ const GLOBAL_SCHEMA = [
     url: siteUrl,
     description:
       "Hub brasileiro gratuito de informação qualificada, escuta sigilosa e apoio para homens que vivem ou viveram relacionamentos abusivos.",
-    sameAs: ["https://homemabusado.substack.com"],
+    sameAs: [
+      "https://homemabusado.substack.com",
+      "https://www.instagram.com/bloghomemabusado/",
+    ],
   },
   {
     "@context": "https://schema.org",

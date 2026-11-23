@@ -4,7 +4,9 @@ import Image from "next/image";
 import {
   ArrowRight,
   ExternalLink,
+  Instagram,
   MessageCircle,
+  Newspaper,
   Phone,
   ShieldAlert,
 } from "lucide-react";
@@ -97,6 +99,28 @@ export default function SobrePage() {
             >
               <span>Ler relatos anônimos</span>
             </Link>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-[#94A3B8]">
+            <span>Acompanhe também:</span>
+            <a
+              href="https://www.instagram.com/bloghomemabusado/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium text-[#2DD4BF] transition-colors hover:text-white"
+            >
+              <Instagram className="h-4 w-4" aria-hidden="true" />
+              <span>@bloghomemabusado</span>
+            </a>
+            <a
+              href="https://homemabusado.substack.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium text-[#2DD4BF] transition-colors hover:text-white"
+            >
+              <Newspaper className="h-4 w-4" aria-hidden="true" />
+              <span>homemabusado.substack.com</span>
+            </a>
           </div>
         </div>
 

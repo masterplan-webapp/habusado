@@ -17,6 +17,7 @@ export async function GET() {
     `Site oficial: ${baseUrl}`,
     "Idioma: pt-BR",
     "Newsletter original: https://homemabusado.substack.com",
+    "Instagram oficial: https://www.instagram.com/bloghomemabusado/",
     "",
     "## O que este portal oferece",
     `- [Página inicial](${baseUrl}/): visão geral dos pilares de acolhimento, artigos recentes e newsletter.`,
