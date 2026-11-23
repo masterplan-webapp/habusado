@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-navy-primary: #021729;
+  --color-navy-surface: #112536;
+  --color-navy-border: #1e3a52;
+  --color-petrol: #015e57;
+  --color-petrol-hover: #027a71;
+  --color-petrol-light: #2dd4bf;
+  --color-petrol-soft: #4fd1c5;
+  --color-ink-primary: #ffffff;
+  --color-ink-secondary: #cbd5e1;
+  --color-reading-bg: #f8fafc;
+  --color-reading-ink: #021729;
+  --color-reading-muted: #334155;
+  --font-sans: "SF Pro Display", -apple-system, BlinkMacSystemFont, var(--font-inter), "Inter", sans-serif;
+}
+
+:root {
+  --bg-primary: #021729;
+  --bg-surface: #112536;
+  --accent-primary: #015e57;
+  --accent-hover: #027a71;
+  --accent-readable: #2dd4bf;
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --reading-bg: #f8fafc;
+  --reading-text: #021729;
+}
+
+html {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2.25rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 1.875rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #2dd4bf;
+  outline-offset: 2px;
+}
+
+.reading-surface {
+  background-color: var(--reading-bg);
+  color: var(--reading-text);
+}
+
+.prose-editorial {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: #021729;
+}
+
+.prose-editorial h2 {
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.625rem;
+  color: #021729;
+  font-weight: 600;
+}
+
+.prose-editorial h3 {
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  color: #021729;
+  font-weight: 600;
+}
+
+.prose-editorial p {
+  margin-bottom: 1.25rem;
+  color: #1e293b;
+}
+
+.prose-editorial ul,
+.prose-editorial ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+  color: #1e293b;
+}
+
+.prose-editorial ul {
+  list-style-type: disc;
+}
+
+.prose-editorial ol {
+  list-style-type: decimal;
+}
+
+.prose-editorial li {
+  margin-bottom: 0.5rem;
+}
+
+.prose-editorial blockquote {
+  margin: 1.75rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid #015e57;
+  border-radius: 0.5rem;
+  background-color: #f1f5f9;
+  color: #021729;
+}
+
+.prose-editorial a {
+  color: #015e57;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-editorial a:hover {
+  color: #027a71;
+}
+
+.prose-editorial strong {
+  color: #021729;
+  font-weight: 600;
+}
