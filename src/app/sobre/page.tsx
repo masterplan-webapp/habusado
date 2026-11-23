@@ -11,6 +11,7 @@ import {
 import { ABOUT_CONTENT, EMERGENCY_CONTACTS } from "@/data/about-content";
 import { buttonClasses } from "@/components/ui/Button";
 import { NewsletterBanner } from "@/components/ui/NewsletterBanner";
+import { PixSupportBox } from "@/components/ui/PixSupportBox";
 
 export const metadata: Metadata = {
   title: "Sobre",
@@ -98,6 +99,8 @@ export default function SobrePage() {
             </Link>
           </div>
         </div>
+
+        <PixSupportBox variant="editorial" />
       </section>
 
       {/* Dedicated Emergency Channels Section */}

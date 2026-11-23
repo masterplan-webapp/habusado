@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PixSupportBox } from "@/components/ui/PixSupportBox";
 import { Logo } from "./Logo";
 
 const CONTENT_LINKS = [
@@ -97,7 +98,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-[#1E3A52] pt-6 text-xs text-[#94A3B8] sm:flex-row sm:items-center sm:justify-between">
+        <PixSupportBox variant="compact" />
+
+        <div className="mt-8 flex flex-col gap-3 border-t border-[#1E3A52] pt-6 text-xs text-[#94A3B8] sm:flex-row sm:items-center sm:justify-between">
           <p>
             Homem Abusado. Conteúdo informativo; não substitui atendimento
             médico, psicológico ou jurídico.
