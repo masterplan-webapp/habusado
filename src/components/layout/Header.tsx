@@ -14,6 +14,7 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/artigos", label: "Artigos" },
   { href: "/relatos", label: "Relatos" },
   { href: "/profissionais", label: "Profissionais" },
+  { href: "/sobre", label: "Sobre" },
 ];
 
 const TOOLS_NAV_ITEMS = [
@@ -46,11 +47,6 @@ const TOOLS_NAV_ITEMS = [
     href: "/privacidade-digital",
     label: "Privacidade Digital",
     description: "Aba anônima, histórico e proteção do celular",
-  },
-  {
-    href: "/sobre",
-    label: "Sobre o Projeto",
-    description: "Nossa história, missão e canais de emergência",
   },
 ];
 
@@ -90,7 +86,7 @@ export function Header() {
 
         <nav
           aria-label="Navegação principal"
-          className="hidden items-center gap-6 lg:flex"
+          className="hidden items-center gap-5 lg:flex"
         >
           {PRIMARY_NAV_ITEMS.map((item) => {
             const isActive =
