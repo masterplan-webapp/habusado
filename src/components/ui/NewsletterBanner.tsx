@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Mail, CheckCircle2 } from "lucide-react";
 import { Button } from "./Button";
 import { cn } from "@/lib/utils";
@@ -136,6 +137,17 @@ export function NewsletterBanner({
               {message}
             </p>
           )}
+          <p className="mt-2.5 text-[11px] text-[#94A3B8]">
+            Seus dados são usados apenas para envio da newsletter, conforme
+            nossa{" "}
+            <Link
+              href="/privacidade"
+              className="text-[#CBD5E1] underline underline-offset-4 hover:text-[#2DD4BF]"
+            >
+              Política de Privacidade (LGPD)
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </section>

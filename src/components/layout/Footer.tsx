@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookiePreferencesTrigger } from "@/components/legal/CookieConsentManager";
 import { PixSupportBox } from "@/components/ui/PixSupportBox";
 import { Logo } from "./Logo";
 
@@ -105,7 +106,22 @@ export function Footer() {
             Homem Abusado. Conteúdo informativo; não substitui atendimento
             médico, psicológico ou jurídico.
           </p>
-          <p>Pressione ESC a qualquer momento para sair desta página.</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link
+              href="/privacidade"
+              className="underline underline-offset-4 transition-colors hover:text-[#2DD4BF]"
+            >
+              Privacidade (LGPD)
+            </Link>
+            <Link
+              href="/termos"
+              className="underline underline-offset-4 transition-colors hover:text-[#2DD4BF]"
+            >
+              Termos de Uso
+            </Link>
+            <CookiePreferencesTrigger />
+            <span>ESC para saída rápida</span>
+          </div>
         </div>
       </div>
     </footer>

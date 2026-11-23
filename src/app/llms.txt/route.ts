@@ -33,6 +33,8 @@ export async function GET() {
     `- [Rede de Profissionais](${baseUrl}/profissionais): diretório filtrável de psicólogos (CRP), advogados (OAB), psiquiatras (CRM) e terapeutas com atendimento presencial e online no Brasil.`,
     `- [Sobre o Homem Abusado](${baseUrl}/sobre): manifesto, missão e história do projeto.`,
     `- [Ajuda Urgente](${baseUrl}/ajuda-urgente): telefones públicos de emergência e orientação imediata no Brasil.`,
+    `- [Política de Privacidade (LGPD)](${baseUrl}/privacidade): transparência de dados, Consent Mode e direitos do titular.`,
+    `- [Termos de Uso](${baseUrl}/termos): limites informativos e regras de moderação.`,
     "",
     "## Canais de Emergência no Brasil",
     ...EMERGENCY_CONTACTS.map(

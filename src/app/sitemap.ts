@@ -27,6 +27,8 @@ const STATIC_ROUTES: StaticRouteEntry[] = [
   { path: "/sobre", changeFrequency: "monthly", priority: 0.75 },
   { path: "/para-profissionais", changeFrequency: "monthly", priority: 0.65 },
   { path: "/colaboradores", changeFrequency: "monthly", priority: 0.65 },
+  { path: "/privacidade", changeFrequency: "yearly", priority: 0.4 },
+  { path: "/termos", changeFrequency: "yearly", priority: 0.4 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
