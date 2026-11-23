@@ -53,12 +53,20 @@ export function HaroldoChat({ initialContext }: HaroldoChatProps) {
   );
   const [errorMessage, setErrorMessage] = useState("");
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, crisisActive]);
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (messages.length <= 1 && !crisisActive) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: isStreaming ? "auto" : "smooth",
+    });
+  }, [messages, crisisActive, isStreaming]);
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
@@ -154,6 +162,9 @@ export function HaroldoChat({ initialContext }: HaroldoChatProps) {
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus({ preventScroll: true });
+      });
     }
   }
 
@@ -405,6 +416,7 @@ export function HaroldoChat({ initialContext }: HaroldoChatProps) {
 
         {/* Messages thread */}
         <div
+          ref={messagesContainerRef}
           role="log"
           aria-live="polite"
           aria-label="Histórico da conversa com o H.Aroldo"
@@ -438,7 +450,6 @@ export function HaroldoChat({ initialContext }: HaroldoChatProps) {
               </div>
             );
           })}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Starter suggestions */}
@@ -479,6 +490,7 @@ export function HaroldoChat({ initialContext }: HaroldoChatProps) {
                 Escreva sua mensagem para o H.Aroldo
               </label>
               <textarea
+                ref={textareaRef}
                 id="haroldo-input"
                 rows={2}
                 value={input}
