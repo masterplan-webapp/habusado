@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { moderateCommunityText } from "@/lib/moderation";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { notifyAdminSafe } from "@/lib/resend";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const UUID_REGEX =
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdminClient() ?? getSupabaseClient();
   let persisted = false;
 
   if (supabase && UUID_REGEX.test(testimonialId)) {
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      console.error("[api/testimonials/replies] Supabase insert error:", error);
       return NextResponse.json(
         {
           error:

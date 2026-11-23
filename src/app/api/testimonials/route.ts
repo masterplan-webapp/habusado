@@ -3,6 +3,7 @@ import { SEED_TESTIMONIALS } from "@/data/seed-testimonials";
 import { moderateCommunityText } from "@/lib/moderation";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { notifyAdminSafe } from "@/lib/resend";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { Testimonial, TestimonialReply } from "@/lib/types";
 
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdminClient() ?? getSupabaseClient();
   let persisted = false;
 
   if (supabase) {
@@ -149,6 +150,7 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      console.error("[api/testimonials] Supabase insert error:", error);
       return NextResponse.json(
         {
           error:

@@ -1,4 +1,5 @@
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
 import { sendEmailSafe } from "@/lib/resend";
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdminClient() ?? getSupabaseClient();
   let alreadySubscribed = false;
   let storedInSupabase = false;
 
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
       if (error.code === "23505") {
         alreadySubscribed = true;
       } else {
+        console.error("[api/newsletter] Supabase insert error:", error);
         return Response.json(
           { error: "Não foi possível salvar sua inscrição agora. Tente novamente." },
           { status: 500 }
