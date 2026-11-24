@@ -45,11 +45,13 @@ export async function sendEmailSafe(
     return { sent: false, skipped: true };
   }
 
+  const defaultFrom =
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "Homem Abusado <onboarding@resend.dev>";
+
   try {
     const response = await client.emails.send({
-      from:
-        input.from ??
-        "Homem Abusado <contato@homemabusado.org>",
+      from: input.from ?? defaultFrom,
       to: input.to,
       subject: input.subject,
       html: input.html,

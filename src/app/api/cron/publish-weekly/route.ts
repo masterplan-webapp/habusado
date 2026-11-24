@@ -2,6 +2,11 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { GoogleGenAI } from "@google/genai";
+import { getAllArticles } from "@/lib/articles";
+import {
+  sendWeeklyNewsletterToSubscribers,
+  type NewsletterArticleSummary,
+} from "@/lib/newsletter-emails";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { notifyAdminSafe } from "@/lib/resend";
 import {
@@ -76,20 +81,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
-  const nowIso = new Date().toISOString();
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
   const supabase = getSupabaseAdminClient();
 
   // Step A: Publish any due scheduled articles in Supabase
   if (supabase) {
     const { data: dueArticles, error: dueError } = await supabase
       .from("articles")
-      .select("id, title, slug")
+      .select("id, title, slug, excerpt, category, read_time")
       .eq("status", "scheduled")
       .lte("published_at", nowIso);
 
     if (!dueError && dueArticles && dueArticles.length > 0) {
       const ids = dueArticles.map((a) => a.id as string);
       const titles = dueArticles.map((a) => a.title as string);
+      const summaries: NewsletterArticleSummary[] = dueArticles.map((a) => ({
+        title: String(a.title),
+        slug: String(a.slug),
+        excerpt: String(a.excerpt ?? ""),
+        category: String(a.category ?? "Saúde Mental"),
+        readTime: a.read_time ? String(a.read_time) : undefined,
+      }));
 
       const { error: updateError } = await supabase
         .from("articles")
@@ -105,6 +118,10 @@ export async function GET(request: Request) {
 
       revalidatePath("/");
       revalidatePath("/artigos");
+      revalidatePath("/sitemap.xml");
+      revalidatePath("/llms.txt");
+
+      const newsletter = await sendWeeklyNewsletterToSubscribers(summaries);
 
       await notifyAdminSafe(
         `Publicação semanal automática: ${titles.length} artigo(s) no ar`,
@@ -113,6 +130,7 @@ export async function GET(request: Request) {
             <h2>Artigos agendados publicados</h2>
             <p>Os seguintes artigos agendados entraram no ar automaticamente:</p>
             <ul>${titles.map((t) => `<li>${t}</li>`).join("")}</ul>
+            <p>Newsletter enviada: ${newsletter.sentCount} de ${newsletter.totalSubscribers} assinantes ativos.</p>
           </div>
         `
       );
@@ -123,12 +141,63 @@ export async function GET(request: Request) {
           action: "published_scheduled",
           count: titles.length,
           titles,
+          newsletter,
         },
         { status: 200 }
       );
     }
+  }
 
-    // Step B: If no scheduled DB articles are due and Gemini is configured, generate next queued topic
+  // Step B: Check if a pre-written weekly MDX article just became due in the last 24 hours
+  const publishedArticles = await getAllArticles();
+  const twentyFourHoursAgo = nowMs - 24 * 60 * 60 * 1000;
+  const newlyDueMdx = publishedArticles.filter((article) => {
+    const ts = new Date(article.publishedAt).getTime();
+    return Number.isFinite(ts) && ts > twentyFourHoursAgo && ts <= nowMs;
+  });
+
+  if (newlyDueMdx.length > 0) {
+    revalidatePath("/");
+    revalidatePath("/artigos");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/llms.txt");
+
+    const summaries: NewsletterArticleSummary[] = newlyDueMdx.map((a) => ({
+      title: a.title,
+      slug: a.slug,
+      excerpt: a.excerpt,
+      category: a.category,
+      readTime: a.readTime,
+    }));
+
+    const newsletter = await sendWeeklyNewsletterToSubscribers(summaries);
+
+    await notifyAdminSafe(
+      `Artigo semanal da série no ar: ${summaries[0].title}`,
+      `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; color: #021729; line-height: 1.6;">
+          <h2>Artigo semanal liberado automaticamente</h2>
+          <p><strong>Título:</strong> ${summaries[0].title}</p>
+          <p><strong>Categoria:</strong> ${summaries[0].category}</p>
+          <p>Newsletter enviada: ${newsletter.sentCount} de ${newsletter.totalSubscribers} assinantes ativos.</p>
+        </div>
+      `
+    );
+
+    return NextResponse.json(
+      {
+        ok: true,
+        action: "published_scheduled_mdx",
+        count: summaries.length,
+        titles: summaries.map((s) => s.title),
+        newsletter,
+      },
+      { status: 200 }
+    );
+  }
+
+  // Step C: If no scheduled DB or MDX article is due today and Gemini is configured, generate next queued topic
+  if (supabase) {
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (geminiKey && EDITORIAL_TOPIC_QUEUE.length > 0) {
       const { data: existingRows } = await supabase
@@ -225,8 +294,22 @@ Retorne APENAS JSON válido com as chaves:
                 });
 
               if (!insertError) {
+                const readTime =
+                  parsed.read_time?.trim() || estimateReadTime(content);
                 revalidatePath("/");
                 revalidatePath("/artigos");
+                revalidatePath("/sitemap.xml");
+                revalidatePath("/llms.txt");
+
+                const newsletter = await sendWeeklyNewsletterToSubscribers([
+                  {
+                    title,
+                    slug,
+                    excerpt,
+                    category,
+                    readTime,
+                  },
+                ]);
 
                 await notifyAdminSafe(
                   `Novo artigo semanal publicado automaticamente: ${title}`,
@@ -236,6 +319,7 @@ Retorne APENAS JSON válido com as chaves:
                       <p><strong>Título:</strong> ${title}</p>
                       <p><strong>Categoria:</strong> ${category}</p>
                       <p><strong>Slug:</strong> /artigos/${slug}</p>
+                      <p>Newsletter enviada: ${newsletter.sentCount} de ${newsletter.totalSubscribers} assinantes ativos.</p>
                       <p>Você pode revisar ou editar o texto quando quiser no painel /admin.</p>
                     </div>
                   `
@@ -247,6 +331,7 @@ Retorne APENAS JSON válido com as chaves:
                     action: "generated_and_published",
                     title,
                     slug,
+                    newsletter,
                   },
                   { status: 200 }
                 );

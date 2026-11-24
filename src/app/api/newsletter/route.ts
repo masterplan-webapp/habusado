@@ -1,3 +1,5 @@
+import { getAllArticles } from "@/lib/articles";
+import { buildWelcomeDigestHtml } from "@/lib/newsletter-emails";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -62,17 +64,11 @@ export async function POST(request: Request) {
   }
 
   if (!alreadySubscribed) {
+    const articles = await getAllArticles();
     await sendEmailSafe({
       to: email,
-      subject: "Inscrição confirmada na newsletter",
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; color: #021729; line-height: 1.6; max-width: 560px;">
-          <p>Olá,</p>
-          <p>Seu e-mail foi cadastrado para receber novos artigos e guias práticos do portal Homem Abusado.</p>
-          <p>Enviamos mensagens de forma discreta e ocasional. Se em qualquer momento preferir sair da lista, basta responder a este e-mail pedindo o descadastro.</p>
-          <p>Com respeito,<br />Equipe Homem Abusado</p>
-        </div>
-      `,
+      subject: "Inscrição confirmada: resumo dos artigos do Homem Abusado",
+      html: buildWelcomeDigestHtml(articles, email),
     });
   }
 
