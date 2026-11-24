@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import {
+  DEFAULT_DEMO_VISIBILITY,
+  getDemoVisibilitySettings,
+  saveDemoVisibilitySettings,
+  type DemoVisibilitySettings,
+} from "@/lib/site-settings";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 import { SEED_TESTIMONIALS } from "@/data/seed-testimonials";
 import { SEED_PROFESSIONALS } from "@/data/seed-professionals";
@@ -136,6 +143,7 @@ function buildPreviewData() {
 
   return {
     mode: "preview" as const,
+    settings: DEFAULT_DEMO_VISIBILITY,
     stats: {
       pendingTestimonials: pendingTestimonials.length,
       pendingReplies: pendingReplies.length,
@@ -202,10 +210,12 @@ export async function GET() {
 
     const professionals = (professionalsRes.data ?? []) as Professional[];
     const subscribersCount = subscribersRes.count ?? 0;
+    const settings = await getDemoVisibilitySettings();
 
     return NextResponse.json(
       {
         mode: "supabase",
+        settings,
         stats: {
           pendingTestimonials: testimonials.filter(
             (t) => t.status === "pending"
@@ -323,6 +333,9 @@ export async function PATCH(request: Request) {
       }
     }
 
+    revalidatePath("/relatos");
+    revalidatePath("/profissionais");
+
     return NextResponse.json(
       { ok: true, status: targetStatus },
       { status: 200 }
@@ -333,4 +346,108 @@ export async function PATCH(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  }
+
+  let body: { type?: "testimonial" | "reply" | "professional"; id?: string };
+  try {
+    body = (await request.json()) as {
+      type?: "testimonial" | "reply" | "professional";
+      id?: string;
+    };
+  } catch {
+    return NextResponse.json(
+      { error: "Requisição inválida." },
+      { status: 400 }
+    );
+  }
+
+  const { type, id } = body;
+  if (
+    !id ||
+    typeof id !== "string" ||
+    (type !== "testimonial" && type !== "reply" && type !== "professional")
+  ) {
+    return NextResponse.json(
+      { error: "Parâmetros inválidos para exclusão." },
+      { status: 400 }
+    );
+  }
+
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    return NextResponse.json({ ok: true, preview: true }, { status: 200 });
+  }
+
+  const tableMap = {
+    testimonial: "testimonials",
+    reply: "testimonial_replies",
+    professional: "professionals",
+  } as const;
+
+  try {
+    const { error } = await supabase.from(tableMap[type]).delete().eq("id", id);
+
+    if (error) {
+      console.error(`[api/admin/moderation] DELETE ${type} error:`, error);
+      return NextResponse.json(
+        { error: "Não foi possível excluir o registro no Supabase." },
+        { status: 500 }
+      );
+    }
+
+    revalidatePath("/relatos");
+    revalidatePath("/profissionais");
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch {
+    return NextResponse.json(
+      { error: "Erro inesperado ao excluir registro." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  }
+
+  let body: Partial<DemoVisibilitySettings>;
+  try {
+    body = (await request.json()) as Partial<DemoVisibilitySettings>;
+  } catch {
+    return NextResponse.json(
+      { error: "Requisição inválida." },
+      { status: 400 }
+    );
+  }
+
+  const next: DemoVisibilitySettings = {
+    showDemoTestimonials:
+      typeof body.showDemoTestimonials === "boolean"
+        ? body.showDemoTestimonials
+        : true,
+    showDemoProfessionals:
+      typeof body.showDemoProfessionals === "boolean"
+        ? body.showDemoProfessionals
+        : true,
+  };
+
+  const result = await saveDemoVisibilitySettings(next);
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error ?? "Não foi possível salvar a preferência." },
+      { status: 500 }
+    );
+  }
+
+  revalidatePath("/relatos");
+  revalidatePath("/profissionais");
+
+  return NextResponse.json({ ok: true, settings: next }, { status: 200 });
 }

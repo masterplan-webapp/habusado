@@ -6,11 +6,14 @@ import {
   Check,
   CheckCircle2,
   ExternalLink,
+  Eye,
+  EyeOff,
   Globe,
   LogOut,
   MapPin,
   RefreshCw,
   ShieldAlert,
+  Trash2,
   X,
 } from "lucide-react";
 import { AdminArticlesTab } from "@/components/admin/AdminArticlesTab";
@@ -39,8 +42,14 @@ interface ModerationStats {
   subscribersCount: number;
 }
 
+interface DemoVisibilitySettings {
+  showDemoTestimonials: boolean;
+  showDemoProfessionals: boolean;
+}
+
 interface ModerationResponse {
   mode: "supabase" | "preview";
+  settings?: DemoVisibilitySettings;
   stats: ModerationStats;
   testimonials: Testimonial[];
   replies: ModerationReply[];
@@ -86,6 +95,7 @@ export function AdminDashboard() {
     React.useState<ProfessionalStatus>("pending");
 
   const [busyKey, setBusyKey] = React.useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = React.useState(false);
   const [feedback, setFeedback] = React.useState<string | null>(null);
   const [actionError, setActionError] = React.useState<string | null>(null);
   const [loggingOut, setLoggingOut] = React.useState(false);
@@ -252,6 +262,158 @@ export function AdminDashboard() {
     }
   }
 
+  async function handleDeleteItem(
+    type: "testimonial" | "reply" | "professional",
+    id: string
+  ) {
+    const labelMap = {
+      testimonial: "este relato",
+      reply: "esta resposta de apoio",
+      professional: "este cadastro profissional",
+    };
+
+    if (
+      !window.confirm(
+        `Tem certeza que deseja excluir definitivamente ${labelMap[type]} do banco de dados? Esta ação não pode ser desfeita.`
+      )
+    ) {
+      return;
+    }
+
+    const key = `delete:${type}:${id}`;
+    setBusyKey(key);
+    setActionError(null);
+    setFeedback(null);
+
+    try {
+      const response = await fetch("/api/admin/moderation", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, id }),
+      });
+
+      if (response.status === 401) {
+        router.refresh();
+        return;
+      }
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setActionError(
+          payload.error ?? "Não foi possível excluir o registro agora."
+        );
+        return;
+      }
+
+      setData((prev) => {
+        if (!prev) return prev;
+        if (type === "testimonial") {
+          const nextTestimonials = prev.testimonials.filter((t) => t.id !== id);
+          const nextReplies = prev.replies.filter(
+            (r) => r.testimonial_id !== id
+          );
+          return {
+            ...prev,
+            testimonials: nextTestimonials,
+            replies: nextReplies,
+            stats: {
+              ...prev.stats,
+              pendingTestimonials: nextTestimonials.filter(
+                (t) => t.status === "pending"
+              ).length,
+              pendingReplies: nextReplies.filter((r) => r.status === "pending")
+                .length,
+            },
+          };
+        }
+        if (type === "reply") {
+          const nextReplies = prev.replies.filter((r) => r.id !== id);
+          return {
+            ...prev,
+            replies: nextReplies,
+            stats: {
+              ...prev.stats,
+              pendingReplies: nextReplies.filter((r) => r.status === "pending")
+                .length,
+            },
+          };
+        }
+        const nextProfessionals = prev.professionals.filter((p) => p.id !== id);
+        return {
+          ...prev,
+          professionals: nextProfessionals,
+          stats: {
+            ...prev.stats,
+            pendingProfessionals: nextProfessionals.filter(
+              (p) => p.status === "pending"
+            ).length,
+          },
+        };
+      });
+
+      setFeedback("Registro excluído definitivamente.");
+    } catch {
+      setActionError("Erro de conexão ao excluir o registro.");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function handleToggleDemoVisibility(
+    field: "showDemoTestimonials" | "showDemoProfessionals"
+  ) {
+    if (!data || savingSettings) return;
+    const current: DemoVisibilitySettings = data.settings ?? {
+      showDemoTestimonials: true,
+      showDemoProfessionals: true,
+    };
+    const next: DemoVisibilitySettings = {
+      ...current,
+      [field]: !current[field],
+    };
+
+    setSavingSettings(true);
+    setActionError(null);
+    setFeedback(null);
+
+    try {
+      const response = await fetch("/api/admin/moderation", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+
+      if (response.status === 401) {
+        router.refresh();
+        return;
+      }
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        settings?: DemoVisibilitySettings;
+      };
+
+      if (!response.ok) {
+        setActionError(
+          payload.error ?? "Não foi possível atualizar a exibição dos exemplos."
+        );
+        return;
+      }
+
+      setData((prev) =>
+        prev ? { ...prev, settings: payload.settings ?? next } : prev
+      );
+      setFeedback("Preferência de exibição dos itens de demonstração salva.");
+    } catch {
+      setActionError("Erro de conexão ao salvar preferência.");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
   const filteredTestimonials = React.useMemo(
     () =>
       (data?.testimonials ?? []).filter(
@@ -408,6 +570,78 @@ export function AdminDashboard() {
         </Card>
       </section>
 
+      <Card className="border-[#1E3A52] bg-[#112536] p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-white">
+              Itens de demonstração no site público
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-[#94A3B8]">
+              Controle quando exibir os 6 relatos e 4 profissionais de exemplo
+              junto aos registros reais do Supabase.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={data?.settings?.showDemoTestimonials ?? true}
+              disabled={savingSettings || loading}
+              onClick={() =>
+                void handleToggleDemoVisibility("showDemoTestimonials")
+              }
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-medium transition-colors disabled:opacity-60",
+                (data?.settings?.showDemoTestimonials ?? true)
+                  ? "border-[#015E57] bg-[#015E57]/25 text-[#2DD4BF]"
+                  : "border-[#1E3A52] bg-[#021729] text-[#94A3B8] hover:border-[#015E57] hover:text-white"
+              )}
+            >
+              {(data?.settings?.showDemoTestimonials ?? true) ? (
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              <span>
+                Relatos de exemplo:{" "}
+                {(data?.settings?.showDemoTestimonials ?? true)
+                  ? "Visíveis"
+                  : "Ocultos"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={data?.settings?.showDemoProfessionals ?? true}
+              disabled={savingSettings || loading}
+              onClick={() =>
+                void handleToggleDemoVisibility("showDemoProfessionals")
+              }
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-medium transition-colors disabled:opacity-60",
+                (data?.settings?.showDemoProfessionals ?? true)
+                  ? "border-[#015E57] bg-[#015E57]/25 text-[#2DD4BF]"
+                  : "border-[#1E3A52] bg-[#021729] text-[#94A3B8] hover:border-[#015E57] hover:text-white"
+              )}
+            >
+              {(data?.settings?.showDemoProfessionals ?? true) ? (
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              <span>
+                Profissionais de exemplo:{" "}
+                {(data?.settings?.showDemoProfessionals ?? true)
+                  ? "Visíveis"
+                  : "Ocultos"}
+              </span>
+            </button>
+          </div>
+        </div>
+      </Card>
+
       <div
         role="tablist"
         aria-label="Categorias de moderação"
@@ -559,6 +793,18 @@ export function AdminDashboard() {
                       </p>
 
                       <div className="mt-5 flex flex-wrap items-center justify-end gap-2.5 border-t border-[#1E3A52] pt-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busyKey !== null}
+                          onClick={() =>
+                            void handleDeleteItem("testimonial", item.id)
+                          }
+                          className="border border-[#1E3A52] text-[#FCA5A5] hover:border-[#DC2626] hover:bg-[#991B1B]/20 hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          Excluir
+                        </Button>
                         {item.status !== "rejected" && (
                           <Button
                             variant="outline"
@@ -684,6 +930,18 @@ export function AdminDashboard() {
                       </p>
 
                       <div className="mt-5 flex flex-wrap items-center justify-end gap-2.5 border-t border-[#1E3A52] pt-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busyKey !== null}
+                          onClick={() =>
+                            void handleDeleteItem("reply", reply.id)
+                          }
+                          className="border border-[#1E3A52] text-[#FCA5A5] hover:border-[#DC2626] hover:bg-[#991B1B]/20 hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          Excluir
+                        </Button>
                         {reply.status !== "rejected" && (
                           <Button
                             variant="outline"
@@ -841,6 +1099,18 @@ export function AdminDashboard() {
                       </p>
 
                       <div className="mt-5 flex flex-wrap items-center justify-end gap-2.5 border-t border-[#1E3A52] pt-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busyKey !== null}
+                          onClick={() =>
+                            void handleDeleteItem("professional", pro.id)
+                          }
+                          className="border border-[#1E3A52] text-[#FCA5A5] hover:border-[#DC2626] hover:bg-[#991B1B]/20 hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          Excluir
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

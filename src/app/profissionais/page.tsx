@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ProfessionalsDirectory } from "@/components/professionals/ProfessionalsDirectory";
 import { SEED_PROFESSIONALS } from "@/data/seed-professionals";
+import { getDemoVisibilitySettings } from "@/lib/site-settings";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { Professional } from "@/lib/types";
 
@@ -13,7 +14,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 async function loadApprovedProfessionals(): Promise<Professional[]> {
-  const supabase = getSupabaseClient();
+  const [supabase, settings] = [
+    getSupabaseClient(),
+    await getDemoVisibilitySettings(),
+  ];
+
+  let dbItems: Professional[] = [];
 
   if (supabase) {
     try {
@@ -26,19 +32,22 @@ async function loadApprovedProfessionals(): Promise<Professional[]> {
         .order("created_at", { ascending: false });
 
       if (!error && Array.isArray(data) && data.length > 0) {
-        const dbItems = data as Professional[];
-        const seenIds = new Set(dbItems.map((item) => item.id));
-        return [
-          ...dbItems,
-          ...SEED_PROFESSIONALS.filter((item) => !seenIds.has(item.id)),
-        ];
+        dbItems = data as Professional[];
       }
     } catch {
-      // Fallback gracefully to seed professionals.
+      // Fallback gracefully when Supabase is unavailable.
     }
   }
 
-  return SEED_PROFESSIONALS;
+  if (!settings.showDemoProfessionals) {
+    return dbItems;
+  }
+
+  const seenIds = new Set(dbItems.map((item) => item.id));
+  return [
+    ...dbItems,
+    ...SEED_PROFESSIONALS.filter((item) => !seenIds.has(item.id)),
+  ];
 }
 
 export default async function ProfissionaisPage() {

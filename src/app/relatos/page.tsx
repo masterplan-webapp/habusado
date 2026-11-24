@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { TestimonialsMural } from "@/components/testimonials/TestimonialsMural";
 import { SEED_TESTIMONIALS } from "@/data/seed-testimonials";
+import { getDemoVisibilitySettings } from "@/lib/site-settings";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { Testimonial, TestimonialReply } from "@/lib/types";
 
@@ -13,7 +14,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 async function loadApprovedTestimonials(): Promise<Testimonial[]> {
-  const supabase = getSupabaseClient();
+  const [supabase, settings] = [
+    getSupabaseClient(),
+    await getDemoVisibilitySettings(),
+  ];
+
+  let dbItems: Testimonial[] = [];
 
   if (supabase) {
     try {
@@ -41,24 +47,26 @@ async function loadApprovedTestimonials(): Promise<Testimonial[]> {
           }
         }
 
-        const dbItems = (data as Testimonial[]).map((item) => ({
+        dbItems = (data as Testimonial[]).map((item) => ({
           ...item,
           support_count: item.support_count ?? 0,
           replies: repliesByStory.get(item.id) ?? [],
         }));
-
-        const seenIds = new Set(dbItems.map((item) => item.id));
-        return [
-          ...dbItems,
-          ...SEED_TESTIMONIALS.filter((item) => !seenIds.has(item.id)),
-        ];
       }
     } catch {
-      // Fallback gracefully to seed testimonials.
+      // Fallback gracefully when Supabase is unavailable.
     }
   }
 
-  return SEED_TESTIMONIALS;
+  if (!settings.showDemoTestimonials) {
+    return dbItems;
+  }
+
+  const seenIds = new Set(dbItems.map((item) => item.id));
+  return [
+    ...dbItems,
+    ...SEED_TESTIMONIALS.filter((item) => !seenIds.has(item.id)),
+  ];
 }
 
 export default async function RelatosPage() {

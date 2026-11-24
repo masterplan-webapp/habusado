@@ -272,7 +272,32 @@ create policy "articles_service_role_all"
   with check (true);
 
 /* ========================================================================== */
-/* 5. Permissoes explicitas de tabela (roles anon, authenticated, service)    */
+/* 5. Configuracoes do site (exibicao de itens de demonstracao)               */
+/* ========================================================================== */
+
+create table if not exists public.site_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.site_settings enable row level security;
+
+create policy "site_settings_public_read"
+  on public.site_settings
+  for select
+  to anon, authenticated
+  using (true);
+
+create policy "site_settings_service_role_all"
+  on public.site_settings
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+/* ========================================================================== */
+/* 6. Permissoes explicitas de tabela (roles anon, authenticated, service)    */
 /* ========================================================================== */
 
 grant usage on schema public to anon, authenticated, service_role;
@@ -282,7 +307,8 @@ grant all privileges on table
   public.testimonials,
   public.testimonial_replies,
   public.professionals,
-  public.articles
+  public.articles,
+  public.site_settings
 to service_role;
 
 grant select, insert on table
@@ -292,4 +318,5 @@ grant select, insert on table
   public.articles
 to anon, authenticated;
 
+grant select on table public.site_settings to anon, authenticated;
 grant insert on table public.subscribers to anon, authenticated;
