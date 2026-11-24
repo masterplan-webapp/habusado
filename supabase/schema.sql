@@ -270,3 +270,26 @@ create policy "articles_service_role_all"
   to service_role
   using (true)
   with check (true);
+
+/* ========================================================================== */
+/* 5. Permissoes explicitas de tabela (roles anon, authenticated, service)    */
+/* ========================================================================== */
+
+grant usage on schema public to anon, authenticated, service_role;
+
+grant all privileges on table
+  public.subscribers,
+  public.testimonials,
+  public.testimonial_replies,
+  public.professionals,
+  public.articles
+to service_role;
+
+grant select, insert on table
+  public.testimonials,
+  public.testimonial_replies,
+  public.professionals,
+  public.articles
+to anon, authenticated;
+
+grant insert on table public.subscribers to anon, authenticated;
